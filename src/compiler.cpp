@@ -12,6 +12,7 @@ static shaderc_source_language LanguageConverter(ShaderCompiler_Language sourceL
 	case ShaderCompiler_LANG_HLSL: return shaderc_source_language_hlsl;
 	case ShaderCompiler_LANG_GLSL: return shaderc_source_language_glsl;
 	}
+	return shaderc_source_language_glsl;
 }
 static  shaderc_optimization_level OptimizationConverter(ShaderCompiler_Optimizations optimizations)
 {
@@ -21,6 +22,7 @@ static  shaderc_optimization_level OptimizationConverter(ShaderCompiler_Optimiza
 	case ShaderCompiler_OPT_Size: return shaderc_optimization_level_size;
 	case ShaderCompiler_OPT_Performance: return shaderc_optimization_level_performance;
 	}
+	return shaderc_optimization_level_zero;
 }
 
 
@@ -43,10 +45,17 @@ static shaderc_shader_kind TypeConverter(ShaderCompiler_ShaderType type)
 	case ShaderCompiler_ST_TaskShader:						return shaderc_task_shader;
 	case ShaderCompiler_ST_MeshShader:						return shaderc_mesh_shader;
 	}
+	return shaderc_vertex_shader;
 }
 
 static char const* CopyString(char const* msg) {
 	size_t const msgSize = strlen(msg);
+	char* log = (char*)MEMORY_MALLOC(msgSize+1);
+	memcpy((void*)log, (void*)msg, msgSize);
+	log[msgSize] = 0;
+	return log;
+}
+static char const* CopyString(char const* msg, size_t const msgSize) {
 	char* log = (char*)MEMORY_MALLOC(msgSize+1);
 	memcpy((void*)log, (void*)msg, msgSize);
 	log[msgSize] = 0;
@@ -179,6 +188,7 @@ static ShaderConductor::ShaderStage SCShaderStageConvertor(ShaderCompiler_Shader
 	case ShaderCompiler_ST_MeshShader:
 		return ShaderConductor::ShaderStage::ComputeShader;
 	}
+	return ShaderConductor::ShaderStage ::ComputeShader;
 }
 
 static ShaderConductor::ShadingLanguage OutputTypeConvertor( ShaderCompiler_OutputType type ) {
@@ -191,6 +201,7 @@ static ShaderConductor::ShadingLanguage OutputTypeConvertor( ShaderCompiler_Outp
 	case ShaderCompiler_OT_MSL_OSX: return ShaderConductor::ShadingLanguage::Msl_macOS;
 	case ShaderCompiler_OT_MSL_IOS: return ShaderConductor::ShadingLanguage::Msl_iOS;
 	}
+	return ShaderConductor::ShadingLanguage::SpirV;
 }
 
 bool CompileShaderShaderConductor(
@@ -218,18 +229,24 @@ bool CompileShaderShaderConductor(
 	options.shaderModel = {6, 0};
 
 	target.language = OutputTypeConvertor(outputType);
-	target.version = nullptr; //??
+	target.version = "10"; //??
 	auto result = Compiler::Compile(source, options, target);
 	if(result.hasError) {
-		output->log = CopyString((char*)result.errorWarningMsg->Data());
+		output->log = CopyString((char*)result.errorWarningMsg->Data(), result.errorWarningMsg->Size());
+		DestroyBlob(result.errorWarningMsg);
 		return false;
 	}
-	output->log = CopyString((char*)result.errorWarningMsg->Data());
+	if(result.errorWarningMsg != nullptr) {
+		output->log = CopyString((char *) result.errorWarningMsg->Data(), result.errorWarningMsg->Size());
+		DestroyBlob(result.errorWarningMsg);
+	}
 
 	size_t const size = result.target->Size();
 	output->shader = MEMORY_MALLOC(size);
 	memcpy((void*)output->shader, result.target->Data(), size);
 	output->shaderSize = size;
+
+	DestroyBlob(result.target);
 	return true;
 }
 

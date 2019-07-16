@@ -44,7 +44,11 @@ elseif(WIN32)
 	configure_file(
 			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/dxcompiler.dll
 			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/dxcompiler.dll COPYONLY)
-	set_target_properties( ShaderConductor PROPERTIES IMPORTED_LOCATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/ShaderConductor.lib)
+	configure_file(
+			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/dxil.dll
+			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/dxil.dll COPYONLY)
+	set_target_properties( ShaderConductor PROPERTIES IMPORTED_IMPLIB ${CMAKE_CURRENT_SOURCE_DIR}/precompiled/ShaderConductor.lib)
+	set_target_properties( ShaderConductor PROPERTIES IMPORTED_LOCATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libShaderConductor.dll)
 
 endif()
 
