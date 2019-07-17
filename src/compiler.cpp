@@ -132,16 +132,19 @@ AL2O3_EXTERN_C bool CompileShaderKhronos(
 
 	shaderc_spvc_compilation_result_t oresult = NULL;
 
+	uint32_t const* spirv = (uint32_t const*)shaderc_result_get_bytes(result);
+	size_t const spirvSize = shaderc_result_get_length(result) / 4;
+
 	switch(outputType) {
 	case ShaderCompiler_OT_GLSL:
-		oresult = shaderc_spvc_compile_into_glsl(ocompiler, (uint32_t const*) output->shader, output->shaderSize, ooptions);
+		oresult = shaderc_spvc_compile_into_glsl(ocompiler, spirv, spirvSize, ooptions);
 		break;
 	case ShaderCompiler_OT_HLSL:
-		oresult = shaderc_spvc_compile_into_hlsl(ocompiler, (uint32_t const*) output->shader, output->shaderSize, ooptions);
+		oresult = shaderc_spvc_compile_into_hlsl(ocompiler, spirv, spirvSize, ooptions);
 		break;
 	case ShaderCompiler_OT_MSL_OSX:
 	case ShaderCompiler_OT_MSL_IOS:
-		oresult = shaderc_spvc_compile_into_msl(ocompiler, (uint32_t const*) output->shader, output->shaderSize, ooptions);
+		oresult = shaderc_spvc_compile_into_msl(ocompiler, spirv, spirvSize, ooptions);
 		break;
 	default:
 	case ShaderCompiler_OT_SPIRV:
@@ -150,7 +153,6 @@ AL2O3_EXTERN_C bool CompileShaderKhronos(
 
 	bool ret = false;
 	if(shaderc_spvc_result_get_status(oresult) == shaderc_compilation_status_success) {
-		MEMORY_FREE((void*)output->shader);
 		output->shader = CopyString(shaderc_spvc_result_get_output(oresult));
 		output->shaderSize = strlen((char*)output->shader) + 1;
 		ret = true;
@@ -159,7 +161,7 @@ AL2O3_EXTERN_C bool CompileShaderKhronos(
 	shaderc_spvc_result_release(oresult);
 	shaderc_spvc_compile_options_release(ooptions);
 	shaderc_spvc_compiler_release(ocompiler);
-	return true;
+	return ret;
 }
 
 static ShaderConductor::ShaderStage SCShaderStageConvertor(ShaderCompiler_ShaderType type) {
@@ -230,23 +232,28 @@ bool CompileShaderShaderConductor(
 
 	target.language = OutputTypeConvertor(outputType);
 	target.version = "10"; //??
-	auto result = Compiler::Compile(source, options, target);
-	if(result.hasError) {
-		output->log = CopyString((char*)result.errorWarningMsg->Data(), result.errorWarningMsg->Size());
-		DestroyBlob(result.errorWarningMsg);
-		return false;
-	}
-	if(result.errorWarningMsg != nullptr) {
-		output->log = CopyString((char *) result.errorWarningMsg->Data(), result.errorWarningMsg->Size());
-		DestroyBlob(result.errorWarningMsg);
-	}
+	try {
+		auto result = Compiler::Compile(source, options, target);
 
-	size_t const size = result.target->Size();
-	output->shader = MEMORY_MALLOC(size);
-	memcpy((void*)output->shader, result.target->Data(), size);
-	output->shaderSize = size;
+		if (result.hasError) {
+			output->log = CopyString((char *) result.errorWarningMsg->Data(), result.errorWarningMsg->Size());
+			DestroyBlob(result.errorWarningMsg);
+			return false;
+		}
+		if (result.errorWarningMsg != nullptr) {
+			output->log = CopyString((char *) result.errorWarningMsg->Data(), result.errorWarningMsg->Size());
+			DestroyBlob(result.errorWarningMsg);
+		}
 
-	DestroyBlob(result.target);
+		size_t const size = result.target->Size();
+		output->shader = MEMORY_MALLOC(size);
+		memcpy((void *) output->shader, result.target->Data(), size);
+		output->shaderSize = size;
+
+		DestroyBlob(result.target);
+	} catch(std::exception const& e) {
+		LOGERROR(e.what());
+	}
 	return true;
 }
 
@@ -259,8 +266,14 @@ AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
 		ShaderCompiler_Optimizations optimizations,
 		ShaderCompiler_OutputType outputType,
 		ShaderCompiler_Output* output) {
+
+	bool useShaderConductor = false;
+#if AL2O3_PLATFORM == AL2O3_PLATFORM_WINDOWS
+	useShaderConductor = true;
+#endif
+
 	// GLSL requires
-	if(language == ShaderCompiler_LANG_GLSL) {
+	if(!useShaderConductor) {
 		// TODO GLSL to DXIL via glslang->SpirvCross->hlsl->ShaderConductor->DXIL
 		if(outputType == ShaderCompiler_OT_DXIL) {
 			return false;
