@@ -24,6 +24,7 @@ set(Src
 set(Deps
 		al2o3_platform
 		al2o3_memory
+		al2o3_vfile
 		gfx_shaderc
 		)
 ADD_LIB(${LibName} "${Interface}" "${Src}" "${Deps}")

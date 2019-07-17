@@ -2,14 +2,15 @@
 #ifndef GFX_SHADERCOMPILER_COMPILER_H_
 #define GFX_SHADERCOMPILER_COMPILER_H_
 
+#include "al2o3_vfile/vfile.h"
+
 typedef enum ShaderCompiler_Language {
 	ShaderCompiler_LANG_HLSL,
 	ShaderCompiler_LANG_GLSL
 } ShaderCompiler_Language;
 
 // not all types of shader will be supported on all languages etc.
-typedef enum ShaderCompiler_ShaderType
-{
+typedef enum ShaderCompiler_ShaderType {
 	ShaderCompiler_ST_VertexShader,
 	ShaderCompiler_ST_FragmentShader,
 	ShaderCompiler_ST_ComputeShader,
@@ -20,7 +21,7 @@ typedef enum ShaderCompiler_ShaderType
 
 	// its unclear whether these always becomr compute shaders as most backends
 	// dodn't differ but glslang frontend does so...
-	ShaderCompiler_ST_RaygenShader,
+			ShaderCompiler_ST_RaygenShader,
 	ShaderCompiler_ST_AnyHitShader,
 	ShaderCompiler_ST_ClosestHitShader,
 	ShaderCompiler_ST_MissShader,
@@ -33,8 +34,11 @@ typedef enum ShaderCompiler_ShaderType
 
 typedef enum ShaderCompiler_Optimizations {
 	ShaderCompiler_OPT_None,
-	ShaderCompiler_OPT_Size,
-	ShaderCompiler_OPT_Performance,
+	ShaderCompiler_OPT_Size, // ShaderConductor don't support size will equal P3
+	ShaderCompiler_OPT_Performance0, // khronos just has a single performance level
+	ShaderCompiler_OPT_Performance1,
+	ShaderCompiler_OPT_Performance2,
+	ShaderCompiler_OPT_Performance3,
 } ShaderCompiler_Optimizations;
 
 typedef enum ShaderCompiler_OutputType {
@@ -49,18 +53,45 @@ typedef enum ShaderCompiler_OutputType {
 // both shader and log must be freed by the caller if not null
 typedef struct ShaderCompiler_Output {
 	uint64_t shaderSize;
-	void const* shader;
-	char const* log;
+	void const *shader;
+	char const *log;
 } ShaderCompiler_Output;
 
+// stand alone compile function for simple one offs compile
 AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
-		char const* name,
 		ShaderCompiler_Language language,
 		ShaderCompiler_ShaderType shaderType,
-		char const* src,
-		char const* entryPoint,
+		char const *name,
+		char const *entryPoint,
+		VFile_Handle file,
 		ShaderCompiler_Optimizations optimizations,
 		ShaderCompiler_OutputType outputType,
-		ShaderCompiler_Output* output
-		);
+		uint32_t outputVersion,
+		ShaderCompiler_Output *output);
+
+typedef struct ShaderCompiler_Context *ShaderCompiler_ContextHandle;
+
+// creates a shader compiler context with defaults of hLSL, Perfomance2 and
+// output set to the platform default renderer type
+AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create();
+AL2O3_EXTERN_C void ShaderCompiler_Destroy(ShaderCompiler_ContextHandle handle);
+
+AL2O3_EXTERN_C void ShaderCompiler_SetLanguage(ShaderCompiler_ContextHandle handle, ShaderCompiler_Language language);
+AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle,
+																						 ShaderCompiler_OutputType output,
+																						 uint32_t outputVersion);
+
+// set the outputVersion to 0 to let the compiler pick a reasonable value (SM6_0)
+AL2O3_EXTERN_C void ShaderCompiler_SetOptimizationLevel(ShaderCompiler_ContextHandle handle,
+																												ShaderCompiler_Optimizations level);
+
+AL2O3_EXTERN_C bool ShaderCompiler_Compile(
+		ShaderCompiler_ContextHandle handle,
+		ShaderCompiler_ShaderType type,
+		char const *name,
+		char const *entryPoint,
+		VFile_Handle file,
+		ShaderCompiler_Output *output
+);
+
 #endif
