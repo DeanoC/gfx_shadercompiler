@@ -273,6 +273,10 @@ AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create() {
 	ctx->khrSpvcCompiler = shaderc_spvc_compiler_initialize();
 	ctx->khrSpvcOptions = shaderc_spvc_compile_options_initialize();
 
+
+	// 'debug' info is also needed for reflection
+	shaderc_compile_options_set_generate_debug_info(ctx->khrOptions);
+
 	// set defaults
 	ShaderCompiler_SetLanguage(ctx, ShaderCompiler_LANG_HLSL);
 	ShaderCompiler_SetOptimizationLevel(ctx, ShaderCompiler_OPT_Performance3);
@@ -430,7 +434,7 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 	} else {
 		ret = CompileShaderKhronos(ctx, type, name, entryPoint, src, output);
 	}
-	if(VFile_GetType(file) == VFile_Type_Memory) {
+	if(VFile_GetType(file) != VFile_Type_Memory) {
 		MEMORY_TEMP_FREE(src);
 	}
 
