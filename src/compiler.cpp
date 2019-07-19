@@ -250,9 +250,11 @@ static bool CompileShaderShaderConductor(
 			DestroyBlob(result.errorWarningMsg);
 		}
 
-		size_t const size = result.target->Size();
+		size_t const size = result.target->Size() + (result.isText ? 1 : 0);
 		output->shader = MEMORY_MALLOC(size);
 		memcpy((void *) output->shader, result.target->Data(), size);
+		if(result.isText) ((char*)output->shader)[size-1] = 0;
+
 		output->shaderSize = size;
 
 		DestroyBlob(result.target);
@@ -276,6 +278,11 @@ AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create() {
 
 	// 'debug' info is also needed for reflection
 	shaderc_compile_options_set_generate_debug_info(ctx->khrOptions);
+	shaderc_spvc_compile_options_set_separate_shader_objects(ctx->khrSpvcOptions, true);
+	shaderc_spvc_compile_options_set_flatten_multidimensional_arrays(ctx->khrSpvcOptions, false);
+	shaderc_spvc_compile_options_set_vulkan_semantics(ctx->khrSpvcOptions, false);
+	shaderc_spvc_compile_options_set_msl_swizzle_texture_samples(ctx->khrSpvcOptions, false);
+	shaderc_spvc_compile_options_set_msl_platform(ctx->khrSpvcOptions, shaderc_spvc_msl_platform_macos);
 
 	// set defaults
 	ShaderCompiler_SetLanguage(ctx, ShaderCompiler_LANG_HLSL);
@@ -402,18 +409,22 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 	bool useShaderConductor = false;
 
 #if AL2O3_PLATFORM == AL2O3_PLATFORM_WINDOWS
-	useShaderConductor = true;
+//	useShaderConductor = true;
 #endif
-
-	if (ctx->inputLanguage == ShaderCompiler_LANG_GLSL) {
-		useShaderConductor = false;
-	}
-
-	if (!useShaderConductor && ctx->outputType == ShaderCompiler_OT_DXIL) {
+	if (ctx->inputLanguage == ShaderCompiler_LANG_GLSL &&
+			ctx->outputType == ShaderCompiler_OT_DXIL) {
 		// currently DXIL and GLSL are not supported. In theory it could be but..
 		// TODO GLSL to DXIL via glslang->SpirvCross->hlsl->ShaderConductor->DXIL
 		return false;
 	}
+
+	if (ctx->inputLanguage == ShaderCompiler_LANG_GLSL) {
+		useShaderConductor = false;
+	}
+	if(ctx->outputType == ShaderCompiler_OT_DXIL) {
+		useShaderConductor = true;
+	}
+
 
 	char* src;
 	if(VFile_GetType(file) == VFile_Type_Memory) {
