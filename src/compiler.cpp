@@ -406,7 +406,7 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 	auto ctx = (ShaderCompiler_Context *) handle;
 	if (!ctx) return false;
 
-	bool useShaderConductor = false;
+	bool useShaderConductor = true;
 
 #if AL2O3_PLATFORM == AL2O3_PLATFORM_WINDOWS
 //	useShaderConductor = true;
