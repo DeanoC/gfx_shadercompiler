@@ -30,27 +30,7 @@
 
 #include <functional>
 
-#if defined(__clang__)
-#define SC_SYMBOL_EXPORT __attribute__((__visibility__("default")))
-#define SC_SYMBOL_IMPORT
-#elif defined(__GNUC__)
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-#define SC_SYMBOL_EXPORT __attribute__((__dllexport__))
-#define SC_SYMBOL_IMPORT __attribute__((__dllimport__))
-#else
-#define SC_SYMBOL_EXPORT __attribute__((__visibility__("default")))
-#define SC_SYMBOL_IMPORT
-#endif
-#elif defined(_MSC_VER)
-#define SC_SYMBOL_EXPORT __declspec(dllexport)
-#define SC_SYMBOL_IMPORT __declspec(dllimport)
-#endif
-
-#ifdef SHADER_CONDUCTOR_SOURCE
-#define SC_API SC_SYMBOL_EXPORT
-#else
-#define SC_API SC_SYMBOL_IMPORT
-#endif
+#define SC_API
 
 namespace ShaderConductor
 {
@@ -184,5 +164,7 @@ namespace ShaderConductor
         static ResultDesc Disassemble(const DisassembleDesc& source);
     };
 } // namespace ShaderConductor
+
+#undef SC_API
 
 #endif // SHADER_CONDUCTOR_HPP

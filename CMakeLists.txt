@@ -42,31 +42,20 @@ set(Deps
 		gfx_shaderc
 		)
 ADD_LIB(${LibName} "${Interface}" "${Src}" "${Deps}")
-add_library( ShaderConductor SHARED IMPORTED )
-#target_link_libraries(${LibName} PRIVATE ShaderConductor)
-add_library( DxCompiler SHARED IMPORTED )
-target_link_libraries(${LibName} PRIVATE DxCompiler)
+
 if(APPLE)
-#	configure_file(
-#			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/libShaderConductor.dylib
-#			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libShaderConductor.dylib COPYONLY)
+	add_library( DxCompiler SHARED IMPORTED )
+	target_link_libraries(${LibName} PRIVATE DxCompiler)
 	configure_file(
 			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/libdxcompiler.dylib
 			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libdxcompiler.3.7.dylib COPYONLY)
-#	set_target_properties( ShaderConductor PROPERTIES IMPORTED_LOCATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libShaderConductor.dylib)
 	set_target_properties( DxCompiler PROPERTIES IMPORTED_LOCATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libdxcompiler.3.7.dylib)
 elseif(WIN32)
-	configure_file(
-			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/ShaderConductor.dll
-			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/ShaderConductor.dll COPYONLY)
 	configure_file(
 			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/dxcompiler.dll
 			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/dxcompiler.dll COPYONLY)
 	configure_file(
 			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/dxil.dll
 			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/dxil.dll COPYONLY)
-	set_target_properties( ShaderConductor PROPERTIES IMPORTED_IMPLIB ${CMAKE_CURRENT_SOURCE_DIR}/precompiled/ShaderConductor.lib)
-	set_target_properties( ShaderConductor PROPERTIES IMPORTED_LOCATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libShaderConductor.dll)
-
 endif()
 
