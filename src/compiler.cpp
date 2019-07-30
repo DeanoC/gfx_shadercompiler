@@ -293,7 +293,7 @@ AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create() {
 #elif AL2O3_PLATFORM == AL2O3_PLATFORM_WINDOWS
 	ShaderCompiler_SetOutput(ctx, ShaderCompiler_OT_DXIL, 60);
 #else
-	ShaderCompiler_SetOutput(ctx, ShaderCompiler_OT_SPIRV, 11);
+	ShaderCompiler_SetOutput(ctx, ShaderCompiler_OT_SPIRV, 13);
 #endif
 	return ctx;
 }
@@ -408,9 +408,6 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 
 	bool useShaderConductor = true;
 
-#if AL2O3_PLATFORM == AL2O3_PLATFORM_WINDOWS
-//	useShaderConductor = true;
-#endif
 	if (ctx->inputLanguage == ShaderCompiler_LANG_GLSL &&
 			ctx->outputType == ShaderCompiler_OT_DXIL) {
 		// currently DXIL and GLSL are not supported. In theory it could be but..
