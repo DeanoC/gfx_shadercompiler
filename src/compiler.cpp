@@ -342,7 +342,7 @@ AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle
 			break;
 		case 14: shaderc_compile_options_set_target_spirv(ctx->khrOptions, shaderc_spirv_version_1_4);
 			break;
-		default: LOGERRORF("Unsupported SPIRV output version", outputVersion);
+			default: LOGERROR("Unsupported SPIRV output version", outputVersion);
 		}
 		break;
 	case ShaderCompiler_OT_DXIL:
