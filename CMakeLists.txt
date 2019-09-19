@@ -12,6 +12,9 @@ SET_MIN_VERSIONS()
 set(LibName gfx_shadercompiler)
 project(${LibName})
 
+# set to true might allow GLSL (not really tested...) but will slow your compiles down...
+set(SUPPORT_GLSL FALSE)
+
 set(Interface
 		compiler.h
 		)
@@ -39,9 +42,22 @@ set(Deps
 		al2o3_platform
 		al2o3_memory
 		al2o3_vfile
-		gfx_shaderc
 		)
+
+if (SUPPORT_GLSL)
+	list(APPEND Deps gfx_shaderc)
+else ()
+	list(APPEND Deps
+			gfx_spirvcross
+			gfx_spirvtools
+			)
+endif ()
+
 ADD_LIB(${LibName} "${Interface}" "${Src}" "${Deps}")
+
+if (SUPPORT_GLSL)
+	target_compile_definitions(${LibName} SUPPORT_GLSL)
+endif ()
 
 if(APPLE)
 	add_library( DxCompiler SHARED IMPORTED )

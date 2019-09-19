@@ -1,11 +1,12 @@
 #include "al2o3_platform/platform.h"
 #include "al2o3_memory/memory.h"
 #include "gfx_shadercompiler/compiler.h"
-#include "shaderc/shaderc.h"
-#include "shaderc/spvc.h"
 #include "ShaderConductor/ShaderConductor.hpp"
 #include "al2o3_vfile/memory.h"
 
+#if defined(SUPPORT_GLSL)
+#include "shaderc/shaderc.h"
+#include "shaderc/spvc.h"
 static shaderc_source_language KhrLanguageConverter(ShaderCompiler_Language sourceLanguage) {
 	switch (sourceLanguage) {
 	case ShaderCompiler_LANG_HLSL: return shaderc_source_language_hlsl;
@@ -43,6 +44,7 @@ static shaderc_shader_kind KhrTypeConverter(ShaderCompiler_ShaderType type) {
 	}
 	return shaderc_vertex_shader;
 }
+#endif
 static ShaderConductor::ShaderStage SCShaderStageConvertor(ShaderCompiler_ShaderType type) {
 	switch (type) {
 
@@ -130,14 +132,16 @@ typedef struct ShaderCompiler_Context {
 	ShaderConductor::Compiler::Options scOptions;
 	ShaderConductor::Compiler::TargetDesc scTarget;
 
+#if defined(SUPPORT_GLSL)
 	// khronos settings
 	shaderc_compiler_t khrCompiler;
 	shaderc_compile_options_t khrOptions;
 	shaderc_spvc_compiler_t khrSpvcCompiler;
 	shaderc_spvc_compile_options_t khrSpvcOptions;
-
+#endif
 } ShaderCompiler_Context;
 
+#if defined(SUPPORT_GLSL)
 static bool CompileShaderKhronos(
 		ShaderCompiler_Context *ctx,
 		ShaderCompiler_ShaderType shaderType,
@@ -218,6 +222,7 @@ static bool CompileShaderKhronos(
 	shaderc_spvc_result_release(oresult);
 	return ret;
 }
+#endif
 
 static bool CompileShaderShaderConductor(
 		ShaderCompiler_Context *ctx,
@@ -270,6 +275,7 @@ AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create() {
 
 	ctx->scOptions = ShaderConductor::Compiler::Options{};
 	ctx->scTarget = ShaderConductor::Compiler::TargetDesc{};
+#if defined(SUPPORT_GLSL)
 	ctx->khrCompiler = shaderc_compiler_initialize();
 	ctx->khrOptions = shaderc_compile_options_initialize();
 	ctx->khrSpvcCompiler = shaderc_spvc_compiler_initialize();
@@ -283,7 +289,7 @@ AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create() {
 	shaderc_spvc_compile_options_set_vulkan_semantics(ctx->khrSpvcOptions, false);
 	shaderc_spvc_compile_options_set_msl_swizzle_texture_samples(ctx->khrSpvcOptions, false);
 	shaderc_spvc_compile_options_set_msl_platform(ctx->khrSpvcOptions, shaderc_spvc_msl_platform_macos);
-
+#endif
 	// set defaults
 	ShaderCompiler_SetLanguage(ctx, ShaderCompiler_LANG_HLSL);
 	ShaderCompiler_SetOptimizationLevel(ctx, ShaderCompiler_OPT_Performance3);
@@ -302,10 +308,12 @@ AL2O3_EXTERN_C void ShaderCompiler_Destroy(ShaderCompiler_ContextHandle handle) 
 	auto ctx = (ShaderCompiler_Context *) handle;
 	if (!ctx) return;
 
+#if defined(SUPPORT_GLSL)
 	shaderc_spvc_compile_options_release(ctx->khrSpvcOptions);
 	shaderc_spvc_compiler_release(ctx->khrSpvcCompiler);
 	shaderc_compile_options_release(ctx->khrOptions);
 	shaderc_compiler_release(ctx->khrCompiler);
+#endif
 	MEMORY_FREE(ctx);
 }
 
@@ -313,9 +321,11 @@ AL2O3_EXTERN_C void ShaderCompiler_SetLanguage(ShaderCompiler_ContextHandle hand
 	auto ctx = (ShaderCompiler_Context *) handle;
 	if (!ctx) return;
 
+#if defined(SUPPORT_GLSL)
 	// shaderconductor doesn't support GLSL input so forces us all platforms to khronos
 	shaderc_source_language const lang = KhrLanguageConverter(language);
 	shaderc_compile_options_set_source_language(ctx->khrOptions, lang);
+#endif
 	ctx->inputLanguage = language;
 }
 
@@ -331,6 +341,7 @@ AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle
 	case ShaderCompiler_OT_SPIRV:
 		ctx->scTarget.language = ShaderConductor::ShadingLanguage::SpirV;
 		if(outputVersion == 0) outputVersion = 11;
+#if defined(SUPPORT_GLSL)
 		switch (outputVersion) {
 		case 10: shaderc_compile_options_set_target_spirv(ctx->khrOptions, shaderc_spirv_version_1_0);
 			break;
@@ -344,6 +355,7 @@ AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle
 			break;
 			default: LOGERROR("Unsupported SPIRV output version", outputVersion);
 		}
+#endif
 		break;
 	case ShaderCompiler_OT_DXIL:
 		if(outputVersion == 0) outputVersion = 60;
@@ -354,7 +366,9 @@ AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle
 	case ShaderCompiler_OT_HLSL:
 		if(outputVersion == 0) outputVersion = 60;
 		ctx->scTarget.language  = ShaderConductor::ShadingLanguage::Hlsl;
+#if defined(SUPPORT_GLSL)
 		shaderc_spvc_compile_options_set_hlsl_shader_model(ctx->khrSpvcOptions, outputVersion);
+#endif
 		ctx->scOptions.shaderModel.major_ver = (outputVersion / 10);
 		ctx->scOptions.shaderModel.minor_ver = (outputVersion % 10);
 		break;
@@ -389,8 +403,10 @@ AL2O3_EXTERN_C void ShaderCompiler_SetOptimizationLevel(ShaderCompiler_ContextHa
 	auto ctx = (ShaderCompiler_Context *) handle;
 	if (!ctx) return;
 
+#if defined(SUPPORT_GLSL)
 	shaderc_optimization_level khropti = KhrOptimizationConverter(level);
 	shaderc_compile_options_set_optimization_level(ctx->khrOptions, khropti);
+#endif
 	ScOptimizationConverter(level, ctx->scOptions);
 
 }
@@ -416,7 +432,11 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 	}
 
 	if (ctx->inputLanguage == ShaderCompiler_LANG_GLSL) {
+#if defined(SUPPORT_GLSL)
 		useShaderConductor = false;
+#else
+		return false;
+#endif
 	}
 	if(ctx->outputType == ShaderCompiler_OT_DXIL) {
 		useShaderConductor = true;
@@ -436,11 +456,13 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 		src[fileSize] = 0;
 	}
 
-	bool ret;
+	bool ret = false;
 	if (useShaderConductor) {
 		ret = CompileShaderShaderConductor(ctx, type, name, entryPoint, src, output);
 	} else {
+#if defined(SUPPORT_GLSL)
 		ret = CompileShaderKhronos(ctx, type, name, entryPoint, src, output);
+#endif
 	}
 	if(VFile_GetType(file) != VFile_Type_Memory) {
 		MEMORY_TEMP_FREE(src);
