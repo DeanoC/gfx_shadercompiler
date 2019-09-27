@@ -229,12 +229,12 @@ bool UTF8BufferToUTF16ComHeap(const char *pUTF8, wchar_t **ppUTF16) throw() {
 																nullptr, 0);
 	if (c == 0)
 		return false;
-	CComHeapPtr<wchar_t> p;
-	if (!p.Allocate(c))
+	wchar_t* p = (wchar_t*) malloc(c * sizeof(wchar_t));
+	if (!p)
 		return false;
 	DXVERIFY_NOMSG(0 < ::MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, pUTF8,
-																					 -1, p.m_pData, c));
-	*ppUTF16 = p.Detach();
+																					 -1, p, c));
+	*ppUTF16 = p;
 	return true;
 }
 
