@@ -67,11 +67,11 @@ endif ()
 
 if(APPLE)
 	add_library(DxCompiler SHARED IMPORTED)
-	target_link_libraries(${LibName} PRIVATE DxCompiler)
 	configure_file(
 			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/libdxcompiler.dylib
 			${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libdxcompiler.3.7.dylib COPYONLY)
 	set_target_properties(DxCompiler PROPERTIES IMPORTED_LOCATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libdxcompiler.3.7.dylib)
+	target_link_libraries(${LibName} PRIVATE DxCompiler)
 elseif(WIN32)
 	configure_file(
 			${CMAKE_CURRENT_SOURCE_DIR}/precompiled/dxcompiler.dll
