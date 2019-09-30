@@ -572,8 +572,9 @@ Compiler::ResultDesc ConvertBinary(const Compiler::ResultDesc& binaryResult, con
 		{
 			AppendError(ret, "MSL doesn't have GS.");
 			return ret;
+		} else {
+			compiler = std::make_unique<spirv_cross::CompilerMSL>(spirvIr, spirvSize);
 		}
-		compiler = std::make_unique<spirv_cross::CompilerMSL>(spirvIr, spirvSize);
 		break;
 
 	default:
@@ -657,9 +658,14 @@ Compiler::ResultDesc ConvertBinary(const Compiler::ResultDesc& binaryResult, con
 		auto mslOpts = mslCompiler->get_msl_options();
 		if (target.version != nullptr)
 		{
-			mslOpts.msl_version = opts.version;
+			uint32_t const major = opts.version / 10;
+			uint32_t const minor = opts.version % 10;
+
+			mslOpts.msl_version = spirv_cross::CompilerMSL::Options::make_msl_version(major, minor);
 		}
 		mslOpts.swizzle_texture_samples = false;
+		mslOpts.argument_buffers = true;
+
 		mslOpts.platform = (target.language == ShadingLanguage::Msl_iOS) ? spirv_cross::CompilerMSL::Options::iOS
 																																		 : spirv_cross::CompilerMSL::Options::macOS;
 

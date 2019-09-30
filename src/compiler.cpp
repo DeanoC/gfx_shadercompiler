@@ -390,9 +390,11 @@ AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle
 		break;
 	case ShaderCompiler_OT_MSL_OSX:
 		ctx->scTarget.language = ShaderConductor::ShadingLanguage::Msl_macOS;
+		ctx->scTarget.version = "20";
 		break;
 	case ShaderCompiler_OT_MSL_IOS:
 		ctx->scTarget.language = ShaderConductor::ShadingLanguage::Msl_iOS;
+			ctx->scTarget.version = "20";
 		break;
 
 	}
