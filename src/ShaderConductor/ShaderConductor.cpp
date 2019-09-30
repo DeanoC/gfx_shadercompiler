@@ -114,19 +114,18 @@ public:
 private:
 	Dxcompiler()
 	{
-		if (dllDetaching)
-		{
+		if (dllDetaching) {
 			return;
 		}
 
 #ifdef _WIN32
 		const char* dllName = "dxcompiler.dll";
 #elif __APPLE__
-		const char* dllName = "libdxcompiler.dylib";
+		const char *dllName = "libdxcompiler.3.7.dylib";
 #else
 		const char* dllName = "libdxcompiler.so";
 #endif
-		const char* functionName = "DxcCreateInstance";
+		const char *functionName = "DxcCreateInstance";
 
 #ifdef _WIN32
 		m_dxcompilerDll = ::LoadLibraryA(dllName);
