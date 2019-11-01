@@ -1,6 +1,4 @@
 #pragma once
-#ifndef GFX_SHADERCOMPILER_COMPILER_H_
-#define GFX_SHADERCOMPILER_COMPILER_H_
 
 #include "al2o3_vfile/vfile.h"
 
@@ -93,5 +91,3 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 		VFile_Handle file,
 		ShaderCompiler_Output *output
 );
-
-#endif
