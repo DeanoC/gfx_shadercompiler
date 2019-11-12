@@ -17,9 +17,9 @@ typedef enum ShaderCompiler_ShaderType {
 	ShaderCompiler_ST_TessControlShader,
 	ShaderCompiler_ST_TessEvaluationShader,
 
-	// its unclear whether these always becomr compute shaders as most backends
-	// dodn't differ but glslang frontend does so...
-			ShaderCompiler_ST_RaygenShader,
+	// its unclear whether these always become compute shaders as most backends
+	// don't differ but glslang frontend does so...
+	ShaderCompiler_ST_RaygenShader,
 	ShaderCompiler_ST_AnyHitShader,
 	ShaderCompiler_ST_ClosestHitShader,
 	ShaderCompiler_ST_MissShader,
@@ -32,8 +32,8 @@ typedef enum ShaderCompiler_ShaderType {
 
 typedef enum ShaderCompiler_Optimizations {
 	ShaderCompiler_OPT_None,
-	ShaderCompiler_OPT_Size, // ShaderConductor don't support size will equal P3
-	ShaderCompiler_OPT_Performance0, // khronos just has a single performance level
+	ShaderCompiler_OPT_Size, 					// ShaderConductor don't support size will equal P3
+	ShaderCompiler_OPT_Performance0, 	// khronos just has a single performance level
 	ShaderCompiler_OPT_Performance1,
 	ShaderCompiler_OPT_Performance2,
 	ShaderCompiler_OPT_Performance3,
@@ -69,7 +69,7 @@ AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
 
 typedef struct ShaderCompiler_Context *ShaderCompiler_ContextHandle;
 
-// creates a shader compiler context with defaults of hLSL, Perfomance2 and
+// creates a shader compiler context with defaults of HLSL, Perfomance 2 and
 // output set to the platform default renderer type
 AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create();
 AL2O3_EXTERN_C void ShaderCompiler_Destroy(ShaderCompiler_ContextHandle handle);
@@ -82,6 +82,9 @@ AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle
 // set the outputVersion to 0 to let the compiler pick a reasonable value (SM6_0)
 AL2O3_EXTERN_C void ShaderCompiler_SetOptimizationLevel(ShaderCompiler_ContextHandle handle,
 																												ShaderCompiler_Optimizations level);
+
+//AL2O3_EXTERN_C void ShaderCompiler_AddSystemHeader(ShaderCompiler_ContextHandle handle, char const * text, uint32_t textSize);
+//AL2O3_EXTERN_C void ShaderCompiler_AddHeaderCallback(ShaderCompiler_ContextHandle handle);
 
 AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 		ShaderCompiler_ContextHandle handle,
