@@ -1,4 +1,5 @@
 #include "al2o3_platform/platform.h"
+#include "al2o3_platform/utf8.h"
 #include "al2o3_memory/memory.h"
 #include "gfx_shadercompiler/compiler.h"
 #include "ShaderConductor/ShaderConductor.hpp"
@@ -132,6 +133,7 @@ typedef struct ShaderCompiler_Context {
 	ShaderConductor::Compiler::Options scOptions;
 	ShaderConductor::Compiler::TargetDesc scTarget;
 
+	ShaderCompiler_IncludeCallback includeCallback;
 #if defined(SUPPORT_GLSL)
 	// khronos settings
 	shaderc_compiler_t khrCompiler;
@@ -224,6 +226,25 @@ static bool CompileShaderKhronos(
 }
 #endif
 
+class OurBlob : public ShaderConductor::Blob
+{
+public:
+		virtual ~OurBlob() {
+			MEMORY_FREE(ptr);
+		}
+
+		void const * Data() const {
+			return ptr;
+		}
+
+		uint32_t Size() const {
+			return size;
+		}
+
+		void * ptr;
+		uint32_t size;
+};
+
 static bool CompileShaderShaderConductor(
 		ShaderCompiler_Context *ctx,
 		ShaderCompiler_ShaderType shaderType,
@@ -241,6 +262,19 @@ static bool CompileShaderShaderConductor(
 	source.stage = SCShaderStageConvertor(shaderType);
 	source.entryPoint = entryPoint;
 	source.numDefines = 0; // TODO
+	if(ctx->includeCallback) {
+		source.loadIncludeCallback = [ctx](const char *includeName) -> Blob * {
+			char *out = nullptr;
+			bool okay = ctx->includeCallback(includeName, &out);
+			if (okay && out) {
+				OurBlob *blob = new OurBlob();
+				blob->ptr = out;
+				blob->size = utf8size(out);
+				return blob;
+			}
+			return nullptr;
+		};
+	}
 
 	try {
 		auto result = Compiler::Compile(source, ctx->scOptions, ctx->scTarget);
@@ -472,7 +506,14 @@ AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 
 	return ret;
 }
-
+AL2O3_EXTERN_C void ShaderCompiler_AddHeaderCallback(ShaderCompiler_ContextHandle sc, ShaderCompiler_IncludeCallback callback) {
+	ASSERT(sc);
+	if(callback && sc->includeCallback != nullptr) {
+		LOGERROR("You can only have 1 include callback per compiler. To reset and reuse, clear with a null for callback");
+		return;
+	}
+	sc->includeCallback = callback;
+}
 
 AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
 		ShaderCompiler_Language language,
@@ -480,6 +521,7 @@ AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
 		char const *name,
 		char const *entryPoint,
 		VFile_Handle file,
+		ShaderCompiler_IncludeCallback includeCallback,
 		ShaderCompiler_Optimizations optimizations,
 		ShaderCompiler_OutputType outputType,
 		uint32_t outputVersion,
@@ -489,6 +531,10 @@ AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
 	ShaderCompiler_SetLanguage(ctx, language);
 	ShaderCompiler_SetOutput(ctx, outputType, outputVersion);
 	ShaderCompiler_SetOptimizationLevel(ctx, optimizations);
+	if(includeCallback) {
+		ShaderCompiler_AddHeaderCallback(ctx, includeCallback);
+	}
+
 	bool ret = ShaderCompiler_Compile(ctx, shaderType, name, entryPoint, file, output);
 
 	ShaderCompiler_Destroy(ctx);

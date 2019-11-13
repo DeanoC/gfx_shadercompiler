@@ -55,6 +55,10 @@ typedef struct ShaderCompiler_Output {
 	char const *log;
 } ShaderCompiler_Output;
 
+// when called fill out with a default allocated utf8 string for this filename, the memory will be be owned by
+// shader compiler and it may cache it, true if successful
+typedef bool (*ShaderCompiler_IncludeCallback)(char const * filename, char ** out);
+
 // stand alone compile function for simple one offs compile
 AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
 		ShaderCompiler_Language language,
@@ -62,6 +66,7 @@ AL2O3_EXTERN_C bool ShaderCompiler_CompileShader(
 		char const *name,
 		char const *entryPoint,
 		VFile_Handle file,
+		ShaderCompiler_IncludeCallback includeCallback, // can be null
 		ShaderCompiler_Optimizations optimizations,
 		ShaderCompiler_OutputType outputType,
 		uint32_t outputVersion,
@@ -75,16 +80,17 @@ AL2O3_EXTERN_C ShaderCompiler_ContextHandle ShaderCompiler_Create();
 AL2O3_EXTERN_C void ShaderCompiler_Destroy(ShaderCompiler_ContextHandle handle);
 
 AL2O3_EXTERN_C void ShaderCompiler_SetLanguage(ShaderCompiler_ContextHandle handle, ShaderCompiler_Language language);
+
+// set the outputVersion to 0 to let the compiler pick a reasonable value (SM6_0)
 AL2O3_EXTERN_C void ShaderCompiler_SetOutput(ShaderCompiler_ContextHandle handle,
 																						 ShaderCompiler_OutputType output,
 																						 uint32_t outputVersion);
 
-// set the outputVersion to 0 to let the compiler pick a reasonable value (SM6_0)
 AL2O3_EXTERN_C void ShaderCompiler_SetOptimizationLevel(ShaderCompiler_ContextHandle handle,
 																												ShaderCompiler_Optimizations level);
 
-//AL2O3_EXTERN_C void ShaderCompiler_AddSystemHeader(ShaderCompiler_ContextHandle handle, char const * text, uint32_t textSize);
-//AL2O3_EXTERN_C void ShaderCompiler_AddHeaderCallback(ShaderCompiler_ContextHandle handle);
+
+AL2O3_EXTERN_C void ShaderCompiler_AddHeaderCallback(ShaderCompiler_ContextHandle handle, ShaderCompiler_IncludeCallback callback);
 
 AL2O3_EXTERN_C bool ShaderCompiler_Compile(
 		ShaderCompiler_ContextHandle handle,
